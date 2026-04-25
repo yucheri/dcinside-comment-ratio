@@ -1,10 +1,19 @@
 importScripts("src/comment-ratio.js");
 
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const FAILURE_CACHE_TTL_MS = 15 * 60 * 1000;
+const FETCH_CONCURRENCY = 4;
 const MAX_UIDS_PER_REQUEST = 80;
 const UID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
-const { classifyCommentRatio, getCommentPostRatio, parseGallogCounts } = self.DCInsideCommentRatio;
+const {
+  classifyCommentRatio,
+  getCommentPostRatio,
+  mapWithConcurrency,
+  parseGallogCounts,
+} = self.DCInsideCommentRatio;
+
+const inFlightByUid = new Map();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message || message.type !== "DC_COMMENT_RATIO_GET_COLORS") {
@@ -24,8 +33,10 @@ async function handleCommentRatioRequest(rawUids) {
     .filter((uid) => UID_PATTERN.test(uid))
     .slice(0, MAX_UIDS_PER_REQUEST);
 
-  const pairs = await Promise.all(
-    uids.map(async (uid) => [uid, await getCommentRatioForUid(uid)])
+  const pairs = await mapWithConcurrency(
+    uids,
+    FETCH_CONCURRENCY,
+    async (uid) => [uid, await getCommentRatioForUid(uid)]
   );
 
   return Object.fromEntries(pairs);
@@ -37,6 +48,19 @@ async function getCommentRatioForUid(uid) {
     return cached;
   }
 
+  const inFlight = inFlightByUid.get(uid);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = fetchCommentRatioForUid(uid).finally(() => {
+    inFlightByUid.delete(uid);
+  });
+  inFlightByUid.set(uid, request);
+  return request;
+}
+
+async function fetchCommentRatioForUid(uid) {
   try {
     const response = await fetch(`https://gallog.dcinside.com/${encodeURIComponent(uid)}`, {
       credentials: "omit",
@@ -65,12 +89,15 @@ async function getCommentRatioForUid(uid) {
     await setCachedCommentRatio(uid, result);
     return result;
   } catch (error) {
-    return {
+    const result = {
       ok: false,
       uid,
       error: error.message,
       fetchedAt: Date.now(),
     };
+
+    await setCachedCommentRatio(uid, result);
+    return result;
   }
 }
 
@@ -79,11 +106,20 @@ async function getCachedCommentRatio(uid) {
   const stored = await chrome.storage.local.get(key);
   const item = stored[key];
 
-  if (!item || !item.ok || Date.now() - item.fetchedAt > CACHE_TTL_MS) {
+  if (!item) {
     return null;
   }
 
-  return item;
+  const age = Date.now() - item.fetchedAt;
+  if (item.ok && age <= CACHE_TTL_MS) {
+    return item;
+  }
+
+  if (!item.ok && age <= FAILURE_CACHE_TTL_MS) {
+    return item;
+  }
+
+  return null;
 }
 
 async function setCachedCommentRatio(uid, result) {

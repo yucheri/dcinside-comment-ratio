@@ -72,10 +72,34 @@
     };
   }
 
+  async function mapWithConcurrency(items, limit, mapper) {
+    const source = Array.isArray(items) ? items : [];
+    const concurrency = Math.max(1, Number(limit) || 1);
+    const results = new Array(source.length);
+    let nextIndex = 0;
+
+    async function worker() {
+      while (nextIndex < source.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await mapper(source[currentIndex], currentIndex);
+      }
+    }
+
+    const workers = Array.from(
+      { length: Math.min(concurrency, source.length) },
+      worker
+    );
+
+    await Promise.all(workers);
+    return results;
+  }
+
   const api = {
     COMMENT_RATIO_COLORS,
     classifyCommentRatio,
     getCommentPostRatio,
+    mapWithConcurrency,
     parseGallogCounts,
   };
 

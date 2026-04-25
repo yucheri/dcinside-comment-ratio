@@ -72,6 +72,7 @@
         if (chrome.runtime.lastError || !response || !response.ok) {
           for (const cell of cells) {
             cell.removeAttribute(QUEUED_ATTR);
+            cell.setAttribute(PROCESSED_ATTR, "true");
           }
           return;
         }
