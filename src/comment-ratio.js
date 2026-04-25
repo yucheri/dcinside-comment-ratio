@@ -8,6 +8,7 @@
     { id: "lime", label: "연두색" },
     { id: "green", label: "초록색" },
   ];
+  const COMMENT_RATIO_CACHE_PREFIX = "comment-ratio:";
 
   function parseCount(rawValue) {
     const digits = String(rawValue || "").replace(/[^\d]/g, "");
@@ -95,12 +96,54 @@
     return results;
   }
 
+  function getCommentRatioCacheKey(uid) {
+    return `${COMMENT_RATIO_CACHE_PREFIX}${uid}`;
+  }
+
+  function splitCachedCommentRatioResults(uids, storedItems, options) {
+    const source = Array.isArray(uids) ? uids : [];
+    const stored = storedItems || {};
+    const now = Number(options && options.now) || Date.now();
+    const cacheTtlMs = Number(options && options.cacheTtlMs) || 0;
+    const failureCacheTtlMs = Number(options && options.failureCacheTtlMs) || 0;
+    const results = {};
+    const misses = [];
+
+    for (const uid of source) {
+      const item = stored[getCommentRatioCacheKey(uid)];
+
+      if (isFreshCacheItem(item, now, cacheTtlMs, failureCacheTtlMs)) {
+        results[uid] = item;
+      } else {
+        misses.push(uid);
+      }
+    }
+
+    return { results, misses };
+  }
+
+  function isFreshCacheItem(item, now, cacheTtlMs, failureCacheTtlMs) {
+    if (!item || typeof item !== "object") {
+      return false;
+    }
+
+    const fetchedAt = Number(item.fetchedAt);
+    if (!Number.isFinite(fetchedAt)) {
+      return false;
+    }
+
+    const age = Math.max(0, now - fetchedAt);
+    return item.ok ? age <= cacheTtlMs : age <= failureCacheTtlMs;
+  }
+
   const api = {
     COMMENT_RATIO_COLORS,
     classifyCommentRatio,
+    getCommentRatioCacheKey,
     getCommentPostRatio,
     mapWithConcurrency,
     parseGallogCounts,
+    splitCachedCommentRatioResults,
   };
 
   root.DCInsideCommentRatio = api;
