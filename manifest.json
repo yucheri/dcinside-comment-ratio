@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "DCInside Comment Ratio",
+  "description": "DCInside 작성자 닉네임을 글댓비 색상으로 표시합니다.",
+  "version": "0.2.2",
+  "permissions": ["storage"],
+  "host_permissions": ["https://gallog.dcinside.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gall.dcinside.com/board/lists*",
+        "https://gall.dcinside.com/mgallery/board/lists*",
+        "https://gall.dcinside.com/mini/board/lists*",
+        "https://gall.dcinside.com/board/view*",
+        "https://gall.dcinside.com/mgallery/board/view*",
+        "https://gall.dcinside.com/mini/board/view*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_start"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+.dc-comment-ratio-nickname,
+.dc-comment-ratio-nickname em {
+  font-weight: 700 !important;
+}
+
+.gall_writer.ub-writer[data-dc-comment-ratio-queued="true"] .nickname {
+  opacity: 0.92;
+}
+
+.dc-comment-ratio-red {
+  color: #d64242 !important;
+}
+
+.dc-comment-ratio-red em {
+  color: #d64242 !important;
+}
+
+.dc-comment-ratio-orange {
+  color: #d96b2b !important;
+}
+
+.dc-comment-ratio-orange em {
+  color: #d96b2b !important;
+}
+
+.dc-comment-ratio-yellow {
+  color: #b88a00 !important;
+}
+
+.dc-comment-ratio-yellow em {
+  color: #b88a00 !important;
+}
+
+.dc-comment-ratio-lime {
+  color: #6ba92e !important;
+}
+
+.dc-comment-ratio-lime em {
+  color: #6ba92e !important;
+}
+
+.dc-comment-ratio-green {
+  color: #168a3a !important;
+}
+
+.dc-comment-ratio-green em {
+  color: #168a3a !important;
+}
