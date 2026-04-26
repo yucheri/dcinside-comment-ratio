@@ -2,11 +2,14 @@
   "manifest_version": 3,
   "name": "DCInside Comment Ratio",
   "description": "DCInside 작성자 닉네임을 글댓비 색상으로 표시합니다.",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "permissions": ["storage"],
   "host_permissions": ["https://gallog.dcinside.com/*"],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {

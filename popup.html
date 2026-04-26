@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DCInside Comment Ratio</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="header">
+        <h1>글댓비</h1>
+        <label class="switch">
+          <input id="enabled" type="checkbox">
+          <span class="switch-track" aria-hidden="true">
+            <span class="switch-thumb"></span>
+          </span>
+        </label>
+      </header>
+
+      <div class="off-panel" aria-hidden="true">
+        <img class="off-image" src="assets/off-icon.gif" alt="">
+      </div>
+
+      <section class="section">
+        <div class="range-header">
+          <span></span>
+          <span>글</span>
+          <span></span>
+          <span class="comment-header">댓글</span>
+          <span></span>
+        </div>
+        <div id="rangeRows" class="range-rows"></div>
+      </section>
+
+      <section class="section">
+        <label class="field">
+          <span>캐시 유지 시간</span>
+          <select id="cacheTtlHours">
+            <option value="1">1시간</option>
+            <option value="6">6시간</option>
+            <option value="24">24시간</option>
+            <option value="72">3일</option>
+            <option value="168">7일</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="actions">
+        <button id="saveButton" type="button" class="primary">저장</button>
+        <button id="clearCacheButton" type="button">캐시 초기화</button>
+        <button id="resetButton" type="button" class="danger">플러그인 초기화</button>
+      </section>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+
+    <script src="src/comment-ratio.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

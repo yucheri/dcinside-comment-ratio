@@ -161,6 +161,14 @@
         const results = response.results.results || {};
         const misses = response.results.misses || [];
 
+        if (response.results.disabled) {
+          for (const cell of cells) {
+            cell.removeAttribute(QUEUED_ATTR);
+            cell.setAttribute(PROCESSED_ATTR, "true");
+          }
+          return;
+        }
+
         for (const [uid, result] of Object.entries(results)) {
           completeWriterCells(uid, result);
         }
@@ -234,6 +242,12 @@
 
     target.classList.remove(...COMMENT_RATIO_CLASSES);
     target.classList.add("dc-comment-ratio-nickname", `dc-comment-ratio-${result.color}`);
+    target.style.setProperty("color", result.hex || "", "important");
+
+    for (const child of target.querySelectorAll("em")) {
+      child.style.setProperty("color", result.hex || "", "important");
+    }
+
     target.title = buildTitle(result);
   }
 
