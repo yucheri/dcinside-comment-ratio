@@ -33,6 +33,23 @@
         <div id="rangeRows" class="range-rows"></div>
       </section>
 
+      <section class="section low-activity-section">
+        <label class="switch feature-toggle">
+          <span>깡계</span>
+          <input id="lowActivityEnabled" type="checkbox">
+          <span class="switch-track" aria-hidden="true">
+            <span class="switch-thumb"></span>
+          </span>
+        </label>
+        <div class="low-activity-row">
+          <button id="lowActivitySwatch" class="swatch" type="button" title="깡계 색상"></button>
+          <input id="lowActivityColor" class="color-input" type="color" aria-label="깡계 색상">
+          <span class="total-label">글+댓글</span>
+          <input id="lowActivityMaxTotal" type="number" min="0" step="1" aria-label="깡계 기준">
+          <span class="total-suffix">이하</span>
+        </div>
+      </section>
+
       <section class="section">
         <label class="field">
           <span>캐시 유지 시간</span>

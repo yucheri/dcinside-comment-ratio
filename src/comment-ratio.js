@@ -16,6 +16,11 @@
     cacheTtlHours: 72,
     failureCacheTtlMinutes: 15,
     maxCacheItems: 5000,
+    lowActivity: {
+      enabled: true,
+      maxTotal: 200,
+      color: "#884dff",
+    },
     colors: {
       red: "#e33232",
       orange: "#e66a1f",
@@ -72,8 +77,13 @@
   }
 
   function classifyCommentRatio(postCount, commentCount, rawSettings) {
-    const ratio = getCommentPostRatio(postCount, commentCount);
     const settings = normalizeCommentRatioSettings(rawSettings);
+    const lowActivityResult = classifyLowActivity(postCount, commentCount, settings);
+    if (lowActivityResult) {
+      return lowActivityResult;
+    }
+
+    const ratio = getCommentPostRatio(postCount, commentCount);
 
     for (const color of COMMENT_RATIO_COLORS) {
       const range = settings.ranges[color.id];
@@ -100,6 +110,28 @@
     return colorId === COMMENT_RATIO_COLORS[0].id
       ? ratio <= range.max
       : ratio < range.max;
+  }
+
+  function classifyLowActivity(postCount, commentCount, settings) {
+    const lowActivity = settings.lowActivity;
+    const total = getTotalActivity(postCount, commentCount);
+
+    if (!lowActivity.enabled || total > lowActivity.maxTotal) {
+      return null;
+    }
+
+    return {
+      id: "purple",
+      label: "보라색",
+      hex: lowActivity.color,
+      total,
+      maxTotal: lowActivity.maxTotal,
+    };
+  }
+
+  function getTotalActivity(postCount, commentCount) {
+    return Math.max(0, Number(postCount) || 0)
+      + Math.max(0, Number(commentCount) || 0);
   }
 
   function parseGallogUserLayerCounts(rawValue) {
@@ -174,6 +206,10 @@
       migratedSource.maxCacheItems,
       DEFAULT_COMMENT_RATIO_SETTINGS.maxCacheItems
     );
+    settings.lowActivity = normalizeLowActivitySettings(
+      migratedSource.lowActivity,
+      DEFAULT_COMMENT_RATIO_SETTINGS.lowActivity
+    );
 
     for (const color of COMMENT_RATIO_COLORS) {
       settings.colors[color.id] = normalizeHexColor(
@@ -232,9 +268,24 @@
     return number === 24 ? fallback : number;
   }
 
+  function normalizeLowActivitySettings(value, fallback) {
+    const source = value && typeof value === "object" ? value : {};
+
+    return {
+      enabled: source.enabled !== false,
+      maxTotal: normalizeNonNegativeInteger(source.maxTotal, fallback.maxTotal),
+      color: normalizeHexColor(source.color, fallback.color),
+    };
+  }
+
   function normalizePositiveInteger(value, fallback) {
     const number = Number(value);
     return Number.isInteger(number) && number > 0 ? number : fallback;
+  }
+
+  function normalizeNonNegativeInteger(value, fallback) {
+    const number = Number(value);
+    return Number.isInteger(number) && number >= 0 ? number : fallback;
   }
 
   function normalizeRange(value, fallback) {

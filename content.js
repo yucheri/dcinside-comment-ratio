@@ -8,6 +8,7 @@
     "dc-comment-ratio-yellow",
     "dc-comment-ratio-lime",
     "dc-comment-ratio-green",
+    "dc-comment-ratio-purple",
   ];
   const PROCESSED_ATTR = "data-dc-comment-ratio-processed";
   const QUEUED_ATTR = "data-dc-comment-ratio-queued";

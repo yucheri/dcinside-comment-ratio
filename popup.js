@@ -13,6 +13,10 @@
   const enabledInput = document.querySelector("#enabled");
   const popup = document.querySelector(".popup");
   const rangeRows = document.querySelector("#rangeRows");
+  const lowActivityEnabled = document.querySelector("#lowActivityEnabled");
+  const lowActivityColor = document.querySelector("#lowActivityColor");
+  const lowActivitySwatch = document.querySelector("#lowActivitySwatch");
+  const lowActivityMaxTotal = document.querySelector("#lowActivityMaxTotal");
   const cacheTtlHours = document.querySelector("#cacheTtlHours");
   const saveButton = document.querySelector("#saveButton");
   const clearCacheButton = document.querySelector("#clearCacheButton");
@@ -25,6 +29,8 @@
     renderRows();
     await loadSettings();
     enabledInput.addEventListener("change", updateEnabledState);
+    lowActivitySwatch.addEventListener("click", () => lowActivityColor.click());
+    lowActivityColor.addEventListener("input", updateLowActivitySwatch);
     saveButton.addEventListener("click", saveSettings);
     clearCacheButton.addEventListener("click", clearCache);
     resetButton.addEventListener("click", resetPlugin);
@@ -73,6 +79,10 @@
     enabledInput.checked = settings.enabled;
     updateEnabledState();
     cacheTtlHours.value = String(settings.cacheTtlHours);
+    lowActivityEnabled.checked = settings.lowActivity.enabled;
+    lowActivityColor.value = settings.lowActivity.color;
+    lowActivityMaxTotal.value = String(settings.lowActivity.maxTotal);
+    updateLowActivitySwatch();
 
     for (const color of COMMENT_RATIO_COLORS) {
       const colorInput = document.querySelector(`[data-color="${color.id}"]`);
@@ -94,6 +104,7 @@
     const settings = normalizeCommentRatioSettings({
       enabled: enabledInput.checked,
       cacheTtlHours: Number(cacheTtlHours.value),
+      lowActivity: collectLowActivity(),
       colors: collectColors(),
       ranges: collectRanges(),
     });
@@ -110,6 +121,14 @@
         document.querySelector(`[data-color="${color.id}"]`).value,
       ])
     );
+  }
+
+  function collectLowActivity() {
+    return {
+      enabled: lowActivityEnabled.checked,
+      maxTotal: Number(lowActivityMaxTotal.value),
+      color: lowActivityColor.value,
+    };
   }
 
   function collectRanges() {
@@ -167,6 +186,10 @@
 
   function updateEnabledState() {
     popup.classList.toggle("is-disabled", !enabledInput.checked);
+  }
+
+  function updateLowActivitySwatch() {
+    lowActivitySwatch.style.backgroundColor = lowActivityColor.value;
   }
 
   function updateRangeStarts() {
