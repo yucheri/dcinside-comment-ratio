@@ -13,8 +13,9 @@ const {
   getCommentPostRatio,
   isCommentRatioCacheKey,
   mapWithConcurrency,
+  normalizeDcinsideRequestToken,
   normalizeCommentRatioSettings,
-  parseGallogCounts,
+  parseGallogUserLayerCounts,
   splitCachedCommentRatioResults,
 } = self.DCInsideCommentRatio;
 
@@ -47,10 +48,10 @@ async function handleMessage(message) {
   }
 
   if (message.type === "DC_COMMENT_RATIO_FETCH_COLOR") {
-    return handleSingleCommentRatioRequest(message.uid);
+    return handleSingleCommentRatioRequest(message.uid, message.ciToken);
   }
 
-  return handleCommentRatioRequest(message.uids);
+  return handleCommentRatioRequest(message.uids, message.ciToken);
 }
 
 async function handleCachedCommentRatioRequest(rawUids) {
@@ -63,7 +64,7 @@ async function handleCachedCommentRatioRequest(rawUids) {
   return getCachedCommentRatios(uids, settings);
 }
 
-async function handleSingleCommentRatioRequest(rawUid) {
+async function handleSingleCommentRatioRequest(rawUid, rawCiToken) {
   const settings = await getSettings();
   if (!settings.enabled) {
     return { uid: "", result: null };
@@ -76,28 +77,33 @@ async function handleSingleCommentRatioRequest(rawUid) {
 
   return {
     uid,
-    result: await getCommentRatioForUid(uid, settings),
+    result: await getCommentRatioForUid(
+      uid,
+      settings,
+      normalizeDcinsideRequestToken(rawCiToken)
+    ),
   };
 }
 
-async function handleCommentRatioRequest(rawUids) {
+async function handleCommentRatioRequest(rawUids, rawCiToken) {
   const settings = await getSettings();
   if (!settings.enabled) {
     return {};
   }
 
   const uids = normalizeUids(rawUids);
+  const ciToken = normalizeDcinsideRequestToken(rawCiToken);
 
   const pairs = await mapWithConcurrency(
     uids,
     FETCH_CONCURRENCY,
-    async (uid) => [uid, await getCommentRatioForUid(uid, settings)]
+    async (uid) => [uid, await getCommentRatioForUid(uid, settings, ciToken)]
   );
 
   return Object.fromEntries(pairs);
 }
 
-async function getCommentRatioForUid(uid, settings) {
+async function getCommentRatioForUid(uid, settings, ciToken) {
   const cached = await getCachedCommentRatio(uid, settings);
   if (cached) {
     return cached;
@@ -108,35 +114,58 @@ async function getCommentRatioForUid(uid, settings) {
     return inFlight;
   }
 
-  const request = queueFetchCommentRatioForUid(uid, settings).finally(() => {
+  const request = queueFetchCommentRatioForUid(uid, settings, ciToken).finally(() => {
     inFlightByUid.delete(uid);
   });
   inFlightByUid.set(uid, request);
   return request;
 }
 
-function queueFetchCommentRatioForUid(uid, settings) {
+function queueFetchCommentRatioForUid(uid, settings, ciToken) {
   const request = fetchQueue.then(
-    () => fetchCommentRatioForUid(uid, settings),
-    () => fetchCommentRatioForUid(uid, settings)
+    () => fetchCommentRatioForUid(uid, settings, ciToken),
+    () => fetchCommentRatioForUid(uid, settings, ciToken)
   );
   fetchQueue = request.catch(() => {});
   return request;
 }
 
-async function fetchCommentRatioForUid(uid, settings) {
+async function fetchCommentRatioForUid(uid, settings, ciToken) {
   try {
-    const response = await fetch(`https://gallog.dcinside.com/${encodeURIComponent(uid)}`, {
-      credentials: "omit",
+    if (!ciToken) {
+      return {
+        ok: false,
+        uid,
+        error: "Missing DCInside request token",
+        fetchedAt: Date.now(),
+      };
+    }
+
+    const body = new URLSearchParams({
+      ci_t: ciToken,
+      user_id: uid,
+    });
+    const response = await fetch("https://gall.dcinside.com/api/gallog_user_layer/gallog_content_reple/", {
+      method: "POST",
+      credentials: "include",
       cache: "no-store",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: body.toString(),
     });
 
     if (!response.ok) {
-      throw new Error(`Gallog responded with ${response.status}`);
+      throw new Error(`DCInside user layer responded with ${response.status}`);
     }
 
-    const html = await response.text();
-    const counts = parseGallogCounts(html);
+    const responseText = await response.text();
+    const counts = parseGallogUserLayerCounts(responseText);
+    if (!counts) {
+      throw new Error("Invalid DCInside user layer response");
+    }
+
     const result = buildResult(uid, counts, settings);
 
     await setCachedCommentRatio(uid, result, settings);

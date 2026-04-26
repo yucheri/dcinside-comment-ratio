@@ -202,7 +202,7 @@
 
     fetchInProgress = true;
     chrome.runtime.sendMessage(
-      { type: "DC_COMMENT_RATIO_FETCH_COLOR", uid },
+      { type: "DC_COMMENT_RATIO_FETCH_COLOR", uid, ciToken: getCookieValue("ci_c") },
       (response) => {
         pendingFetchUidSet.delete(uid);
 
@@ -265,5 +265,22 @@
 
   function getUid(cell) {
     return String(cell.dataset.uid || "").trim();
+  }
+
+  function getCookieValue(name) {
+    const cookieName = `${name}=`;
+    const parts = document.cookie.split("; ");
+
+    for (const part of parts) {
+      if (part.startsWith(cookieName)) {
+        try {
+          return decodeURIComponent(part.slice(cookieName.length));
+        } catch (_error) {
+          return "";
+        }
+      }
+    }
+
+    return "";
   }
 })();

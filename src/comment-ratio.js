@@ -102,29 +102,25 @@
       : ratio < range.max;
   }
 
-  function extractCount(html, label) {
-    const patterns = [
-      new RegExp(`${label}\\s*<span[^>]*class=["'][^"']*num[^"']*["'][^>]*>\\s*\\(([\\d,]+)\\)\\s*<\\/span>`, "i"),
-      new RegExp(`${label}\\s*\\(([\\d,]+)\\)`, "i"),
-    ];
-
-    for (const pattern of patterns) {
-      const match = pattern.exec(html);
-      if (match) {
-        return parseCount(match[1]);
-      }
+  function parseGallogUserLayerCounts(rawValue) {
+    const parts = String(rawValue || "").split(",");
+    if (parts.length < 2 || !hasDigit(parts[0]) || !hasDigit(parts[1])) {
+      return null;
     }
 
-    return 0;
+    return {
+      postCount: parseCount(parts[0]),
+      commentCount: parseCount(parts[1]),
+    };
   }
 
-  function parseGallogCounts(html) {
-    const source = String(html || "");
+  function normalizeDcinsideRequestToken(rawValue) {
+    const token = String(rawValue || "").trim();
+    return /^[A-Za-z0-9_-]{1,128}$/.test(token) ? token : "";
+  }
 
-    return {
-      postCount: extractCount(source, "게시글"),
-      commentCount: extractCount(source, "댓글"),
-    };
+  function hasDigit(value) {
+    return /\d/.test(String(value || ""));
   }
 
   async function mapWithConcurrency(items, limit, mapper) {
@@ -373,8 +369,9 @@
     getCommentPostRatio,
     isCommentRatioCacheKey,
     mapWithConcurrency,
+    normalizeDcinsideRequestToken,
     normalizeCommentRatioSettings,
-    parseGallogCounts,
+    parseGallogUserLayerCounts,
     splitCachedCommentRatioResults,
   };
 

@@ -4,7 +4,7 @@
   "description": "DCInside 작성자 닉네임을 글댓비 색상으로 표시합니다.",
   "version": "0.3.0",
   "permissions": ["storage"],
-  "host_permissions": ["https://gallog.dcinside.com/*"],
+  "host_permissions": ["https://gall.dcinside.com/*"],
   "background": {
     "service_worker": "background.js"
   },
